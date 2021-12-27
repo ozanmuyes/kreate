@@ -1,0 +1,22 @@
+{
+  "name": "kreate",
+  "version": "0.1.0",
+  "description": "Kick-start your next project, just the way you like it",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "kick-start",
+    "project"
+  ],
+  "author": "Ozan Müyesseroğlu <ozanmuyes@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "fs-extra": "^10.0.0",
+    "readline-sync": "^1.4.10",
+    "vm2": "^3.9.5",
+    "yargs": "^17.3.1"
+  },
+  "bin": "./kreate"
+}

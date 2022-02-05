@@ -57,7 +57,7 @@ module.exports = (/** @type {import('./index').FunctionFnArgs} */ args) => ({
     } else {
       fs.writeFileSync(dotgitignore, dotgitignoreContents, { encoding: 'utf-8' });
 
-      child_process.execSync('git init', {
+      child_process.execSync('git init -b main', {
         cwd: args.project.root,
         stdio: 'inherit',
       });

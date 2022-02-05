@@ -1,3 +1,16 @@
+// FIXME TR eğer `packageManagerExec` çalıştırılacaksa ve project root
+//          değiştirilecekse `project_root_local` olarak varolan bir
+//          klasör gösterilebilir ve force (`-f`) flag'i gerekli
+//          olmayabilir - mesela `--no-root-dir-check`. Ama bu
+//          kullanılırsa o zaman `askProjectRoot` veya
+//          `changeProjectRoot` ile project root
+//          değiştirilmeli - yoksa error out!
+
+// FIXME TR eğer project name CLI arg set edilmişse `project_root_local`a append et
+//          yoksa klasör yolları yanlış oluyor.
+
+// TODO can we `npx kreate ...` or `yarn create kreate ...` ??? without globally installing kreate first
+
 const appStartTime = Date.now();
 
 const fs = require('fs');
@@ -109,7 +122,12 @@ if (
   // TODO After the implementation (download remote files and folders) set `_tmpPath`
 } else if (/* FIXME _tmpPath is a valid path on this system */ true) {
   if (!path.isAbsolute(_tmpPath)) {
-    _tmpPath = path.join(process.cwd(), _tmpPath);
+    if (_tmpPath.startsWith('~')) {
+      _tmpPath = path.join(process.env.HOME, path.relative('~', _tmpPath));
+    } else {
+      // must be a relative path on local filesystem
+      _tmpPath = path.join(process.cwd(), _tmpPath);
+    }
   }
 } else {
   if (!argv.silent) {
@@ -118,9 +136,25 @@ if (
   process.exit(3);
 }
 
-if (!fs.existsSync(_tmpPath)) {
+const _tmpPathIsDirectory = fs.lstatSync(_tmpPath).isDirectory();
+const _tmpPathExists = fs.existsSync(_tmpPath);
+if (_tmpPathExists) {
+  if (_tmpPathIsDirectory) {
+    _tmpPath = path.join(_tmpPath, 'script.js');
+    if (!fs.existsSync(_tmpPath)) {
+      if (!argv.silent) {
+        console.error(`Script file couldn't found at "${_tmpPath}".`);
+      }
+      process.exit(4);
+    }
+  }/*  else {
+    if (_tmpPath.endsWith('.js')) {
+
+    }
+  } */
+} else {
   if (!argv.silent) {
-    console.error(`Script couldn't found at "${_tmpPath}".`);
+    console.error(`Nothing exists at "${_tmpPath}".`);
   }
   process.exit(4);
 }
@@ -164,7 +198,9 @@ if (!argv.dryRun && fs.existsSync(_tmpPath)) {
       console.error('Designated project root is existing but because of force flag overwriting the directory.');
     }
 
-    // TODO what to do? unlink the dir and create an empty one?
+    // remove existing (to be overriden) and create an empty one
+    fs.rmSync(_tmpPath, { recursive: true, force: true });
+    fs.mkdirSync(_tmpPath);
   } else {
     if (!argv.silent) {
       console.error('Designated project root is existing. Exiting.');
@@ -184,7 +220,7 @@ let PROJECT_ROOT = _tmpPath;
 
 // #endregion PROJECT_ROOT
 
-// Lowe-level functions for package manager
+// Low-level functions for package manager
 //
 const _managers = require('./managers')(PROJECT_ROOT);
 if (_managers.length === 0) {
@@ -288,11 +324,17 @@ function changeProjectRoot(newRootPath) {
   // NOTE Raison d'etre: see `askProjectRoot`
 
   // Check if `newRootPath` is under the old (designated) one
-  if (path.dirname(newRootPath) !== PROJECT_ROOT) {
-    if (!argv.silent) {
-      console.warn('Designated new project root is not under the old one. Ignoring.');
+  if (path.isAbsolute(newRootPath)) {
+    if (path.dirname(newRootPath) !== PROJECT_ROOT) {
+      if (!argv.silent) {
+        console.warn('Designated new project root is not under the old one. Ignoring.');
+      }
+      return false;
     }
-    return false;
+  } else {
+    // NOTE The reason we are not using `path.join()` here is to jail
+    //      working directory under the designated project root.
+    newRootPath = `${PROJECT_ROOT}/${newRootPath.split(path.sep).slice(1).join(path.sep)}`;
   }
 
   const oldRootPath = PROJECT_ROOT;
@@ -319,6 +361,9 @@ const vm = new VM({
     setDefaultPackageManager,
     askProjectRoot,
     changeProjectRoot,
+    get PROJECT_NAME() {
+      return PROJECT_NAME;
+    },
   },
 });
 

@@ -1,3 +1,8 @@
+// FIXME TR script dosyalarına PROJECT_ROOT getter'ını
+//          expose ettiğimiz gibi, bu function'ın
+//          callback ile gönderilen project name
+//          e gerek yok?, callback alma.
+
 // Like `npm init` and `yarn init`
 
 const fs = require('fs');

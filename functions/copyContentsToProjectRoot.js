@@ -18,7 +18,7 @@ module.exports = (/** @type {import('./index').FunctionFnArgs} */ args) => ({
     }
 
     if (!args.flags.dryRun) {
-      fse.copySync(fromPath, toPath, { overwrite });
+      fse.copySync(fromPath, toPath, { overwrite, recursive: true });
     }
   },
 });
